@@ -1,5 +1,5 @@
+//dependencies
 var mysql = require ("mysql");
-
 var inquirer = require("Inquirer");
 //var key = require(key file)  ----create a keys file------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
 
@@ -10,21 +10,24 @@ var connection = mysql.createConnection({
     //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
     user: "root",
     password: "PizzaPizza69",
-    database: "bamazon"
+    database: "BamazonIndustrial"
     //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
   });
 
   connection.connect(function(err) {
     if (err) throw err;
-    // run the start function after the connection is made to prompt the user
+    // Sends "welcome" message when connected and loads catalog.
     console.log("\nWelcome to Bamazon! Please check out our selects.\n");
-    start();
+    catalog();
   })
 
   var selectInfo = [];
+  var catalogLength  = 0;
 
-  function start() {
-         connection.query("SELECT * FROM products", function(err, results){
+    function catalog() {
+
+        connection.query("SELECT * FROM products", function(err, results){ 
+            catalogLength = results.length;
             if (err) throw err;
             for(i=0; i<results.length; i++){
                 console.log("Item #: " + results[i].id);
@@ -33,65 +36,66 @@ var connection = mysql.createConnection({
                 console.log("Price: $" + results[i].price);
                 console.log("\n");
                 };
-              });
-            productNumber();
-         };
+              }); 
+    };
 
-         // Asynco <----------------------------------------------------------------------------------------------!!!!
-
-  function productNumber() {
-            inquirer.prompt ([
-                {
-                type: "input",
-                message: "What Product would you care to order? Please enter item name. \n",
-                name: "productNumber"
-                }
-            ]).then(function (answer) {
-                if (!isNaN(answer.productNumber) && answer.productNumber <= 10 && !undefined ){ /// <---------- "!unfined"
-                 selectInfo.push(parseInt(answer.productNumber) - 1); // <------results.length instead of "-1"
-                  quantity();
-                } else {
-                  console.log("Please select an item number from the catalog \n");
-                  productNumber();
-                };
-             });
+    function productNumber() {
+        inquirer.prompt ([
+          {
+            type: "input",
+            message: "What Product would you care to order? Please enter item name. \n",
+            name: "productNumber"
+            }
+        ]).then(function (answer) {
+            if (!isNaN(answer.productNumber) && answer.productNumber <=  catalogLength && !undefined ){ /// <---------- "!unfined"
+              selectInfo.push(parseInt(answer.productNumber));
+              quantity();
+            } else {
+              console.log("Please select an item number from the catalog \n");
+              productNumber(); 
             };
+          });
+    };
 
-  function quantity() {
-            inquirer.prompt ([
-                {
-                type: "input",
-                message: "What quanity of Product would you like to order? \n",
-                name: "quantityProduct" //var for product quantity
-                }
-            ]).then(function (answer) {
-                //if (!isNaN(answer.quanityProduct && " # rep quanity in cat"))
-                if (!isNaN(answer.quantityProduct)) {
-                  selectInfo.push(parseInt(answer.quantityProduct));
-                  orderDetails();
-                } else {
-                  console.log("Please select a quantity of products you would like to purchase \n");
-                  quantity();
-                };
-            })
-          };
+    setTimeout( function(){
+      productNumber()
+    }, 500);
 
-  function orderDetails(){
+    function quantity() {
+          inquirer.prompt ([
+            {
+              type: "input",
+              message: "What quanity of Product would you like to order? \n",
+              name: "quantityProduct" //var for product quantity
+              }
+          ]).then(function (answer) {
+              //if (!isNaN(answer.quanityProduct && " # rep quanity in cat"))
+              if (!isNaN(answer.quantityProduct)) {
+                selectInfo.push(parseInt(answer.quantityProduct));
+                orderDetails();
+              } else {
+                console.log("Please select a quantity of products you would like to purchase \n");
+                quantity();
+              };
+              })
+    };
 
-            connection.query("SELECT id, name, stock_quantity, price FROM products", function(err, results){
-              console.log("\nOrder details");
-              console.log("-----------------------------------------------------------");
-              console.log("     Product#: " + selectInfo[0]);
-              console.log("     Product Name: "+ results[selectInfo[0]].name);
-              console.log("     Order quantity: " + selectInfo[1]);
-              console.log("     Cost: $" +(results[selectInfo[0]].price * selectInfo[1]));
-              console.log("-----------------------------------------------------------");
+    function orderDetails(){
 
-                if (selectInfo[1] > results[selectInfo[0]].stock_quantity){
-                  console.log ("Sorry, we do not have that much in stock. \n     Quantity available: " + results[selectInfo[0]].stock_quantity + "\nPlease choose another quantity. Thank you! \n");
-                  selectInfo.pop();
-                  quantity();
-                } else {
+          connection.query("SELECT id, name, stock_quantity, price FROM products", function(err, results){
+            console.log("\nOrder details");
+            console.log("-----------------------------------------------------------");
+            console.log("     Product#: " + selectInfo[0]); // "+1" might be problematic 
+            console.log("     Product Name: "+ results[selectInfo[0]].name);
+            console.log("     Order quantity: " + selectInfo[1]);
+            console.log("     Cost: $" +(results[selectInfo[0]].price * selectInfo[1]));
+            console.log("-----------------------------------------------------------");
+
+              if (selectInfo[1] > results[selectInfo[0]].stock_quantity){
+                console.log ("Sorry, we do not have that much in stock. \n     Quantity available: " + results[selectInfo[0]].stock_quantity + "\nPlease choose another quantity. Thank you! \n");
+                selectInfo.pop();
+                quantity();
+              } else {
 
               inquirer.prompt ([
                 {
@@ -110,13 +114,28 @@ var connection = mysql.createConnection({
           });
   };
 
-  function sumbitOrder(){
-    connection.query("SELECT id, stock_quantity FROM products", function(err, results){
-      console.log("\nOrder placed, Thank you");
-      console.log("\nnew quantity available: " + (results[selectInfo[0]].stock_quantity - selectInfo[1]) + "\n"); // <---- update SQL
-                
-              // connection.query("INSERT INTO products(results[selectInfo[0]].stock_quantity"), function(err, results){
+    function sumbitOrder(){
+      connection.query("SELECT id, stock_quantity FROM products", function(err, results){
 
-            });
-    };
-  
+          var query = connection.query( "UPDATE products SET ? WHERE ?",
+            [{ stock_quantity: (results[selectInfo[0]].stock_quantity - selectInfo[1])
+              },
+            { id: selectInfo[0]
+              }],
+            function(err, res) {
+              console.log(res.affectedRows + " products updated!\n");
+              // Call deleteProduct AFTER the UPDATE completes
+              //deleteProduct();
+            }
+          );
+          
+          // logs the actual query being run
+          //console.log(query.sql);
+        });
+        console.log("\nOrder placed, Thank you");
+
+      };
+   
+    
+
+      //would you like to place another order? if no connection.end()

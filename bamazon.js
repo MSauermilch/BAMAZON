@@ -10,7 +10,7 @@ var connection = mysql.createConnection({
     //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
     user: "root",
     password: "PizzaPizza69",
-    database: "BamazonIndustrial"
+    database: "bamazonindustrial"
     //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
   });
 
@@ -25,18 +25,15 @@ var connection = mysql.createConnection({
   var catalogLength  = 0;
 
     function catalog() {
-
         connection.query("SELECT * FROM products", function(err, results){ 
             catalogLength = results.length;
             if (err) throw err;
             for(i=0; i<results.length; i++){
-                console.log("Item #: " + results[i].id);
-                console.log("Item Name: " + results[i].name);
-                console.log("Department: " + results[i].department_name);
-                console.log("Price: $" + results[i].price);
-                console.log("\n");
+                console.log("Item #: " + results[i].id + "\n" +"Item Name: " + results[i].name + "\n" + "Department: " 
+                    + results[i].department_name + "\n" + "Price: $" + results[i].price + "\n");
                 };
-              }); 
+            productNumber();
+          }); 
     };
 
     function productNumber() {
@@ -47,7 +44,7 @@ var connection = mysql.createConnection({
             name: "productNumber"
             }
         ]).then(function (answer) {
-            if (!isNaN(answer.productNumber) && answer.productNumber <=  catalogLength && !undefined ){ /// <---------- "!unfined"
+            if (!isNaN(answer.productNumber) && answer.productNumber <=  catalogLength && !undefined ){ 
               selectInfo.push(parseInt(answer.productNumber));
               quantity();
             } else {
@@ -56,10 +53,6 @@ var connection = mysql.createConnection({
             };
           });
     };
-
-    setTimeout( function(){
-      productNumber()
-    }, 500);
 
     function quantity() {
           inquirer.prompt ([
@@ -124,18 +117,28 @@ var connection = mysql.createConnection({
               }],
             function(err, res) {
               console.log(res.affectedRows + " products updated!\n");
-              // Call deleteProduct AFTER the UPDATE completes
-              //deleteProduct();
+              setTimeout( function(){
+                newOrder();
+                }, 500);
             }
           );
-          
-          // logs the actual query being run
-          //console.log(query.sql);
         });
-        console.log("\nOrder placed, Thank you");
-
       };
    
-    
-
-      //would you like to place another order? if no connection.end()
+    function newOrder(){
+      inquirer.prompt ([
+        {
+          type: "confirm",
+          message:"Would you like to place another order?",
+          name: "nextOrder"
+        }
+      ]).then(function(answer)
+        { if (answer.nextOrder === true){
+          console.log("\nWelcome to Bamazon! Please check out our selects.\n");
+          catalog();
+        } else {
+          console.log("\nOrder placed. Thank you");
+          connection.end();
+        }
+      })
+    };

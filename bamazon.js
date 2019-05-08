@@ -1,17 +1,14 @@
 //dependencies
 var mysql = require ("mysql");
 var inquirer = require("Inquirer");
-//var key = require(key file)  ----create a keys file------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
 
 var connection = mysql.createConnection({
     host: "localhost",
     //my port
     port: 3306,
-    //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
     user: "root",
-    password: "PizzaPizza69",
+    password: "Your_mysql_password",
     database: "bamazonindustrial"
-    //----------create a keys file-------------------------------------------------------------<<<<<<<<<<<<<<<<<<<<<<<<<
   });
 
   connection.connect(function(err) {

@@ -4,10 +4,9 @@ var inquirer = require("Inquirer");
 
 var connection = mysql.createConnection({
     host: "localhost",
-    //my port
     port: 3306,
     user: "root",
-    password: "Your_mysql_password",
+    password: "PizzaPizza69",
     database: "bamazonindustrial"
   });
 
@@ -17,40 +16,48 @@ var connection = mysql.createConnection({
     console.log("\nWelcome to Bamazon! Please check out our selects.\n");
     catalog();
   })
-
-  var selectInfo = [];
-  var catalogLength  = 0;
-
+    
+  // Prints out catalog items from database
     function catalog() {
-        connection.query("SELECT * FROM products", function(err, results){ 
+        connection.query("SELECT * FROM products", function(err, results){
+            catalogLength  = 0; 
             catalogLength = results.length;
+
             if (err) throw err;
             for(i=0; i<results.length; i++){
-                console.log("Item #: " + results[i].id + "\n" +"Item Name: " + results[i].name + "\n" + "Department: " 
-                    + results[i].department_name + "\n" + "Price: $" + results[i].price + "\n");
+                console.log("Item #: " + results[i].id + "\n" +
+                            "Item Name: " + results[i].name + "\n" + 
+                            "Department: " + results[i].department_name + "\n" + 
+                            "Price: $" + results[i].price + "\n");
                 };
+
             productNumber();
           }); 
     };
-
+  
+  //Questions Product item
     function productNumber() {
         inquirer.prompt ([
           {
             type: "input",
-            message: "What Product would you care to order? Please enter item name. \n",
+            message: "What Product would you care to order? \n Please enter Item #. \n",
             name: "productNumber"
             }
         ]).then(function (answer) {
-            if (!isNaN(answer.productNumber) && answer.productNumber <=  catalogLength && !undefined ){ 
-              selectInfo.push(parseInt(answer.productNumber));
+            UserProdChoice = (answer.productNumber - 1);
+
+            // Product number validation.
+            if (!isNaN(UserProdChoice) && UserProdChoice <=  catalogLength && !undefined ){
+              selectInfo = [];
+              selectInfo.push(parseInt(UserProdChoice));
               quantity();
             } else {
-              console.log("Please select an item number from the catalog \n");
+              console.log("Please select an Item # from the catalog. \n");
               productNumber(); 
             };
           });
     };
-
+  //Questions Product quanity 
     function quantity() {
           inquirer.prompt ([
             {
@@ -59,7 +66,6 @@ var connection = mysql.createConnection({
               name: "quantityProduct" //var for product quantity
               }
           ]).then(function (answer) {
-              //if (!isNaN(answer.quanityProduct && " # rep quanity in cat"))
               if (!isNaN(answer.quantityProduct)) {
                 selectInfo.push(parseInt(answer.quantityProduct));
                 orderDetails();
@@ -70,21 +76,23 @@ var connection = mysql.createConnection({
               })
     };
 
+    // Order Comformation 
     function orderDetails(){
 
           connection.query("SELECT id, name, stock_quantity, price FROM products", function(err, results){
             console.log("\nOrder details");
             console.log("-----------------------------------------------------------");
-            console.log("     Product#: " + selectInfo[0]); // "+1" might be problematic 
+            console.log("     Product#: " + (selectInfo[0] + 1)); 
             console.log("     Product Name: "+ results[selectInfo[0]].name);
             console.log("     Order quantity: " + selectInfo[1]);
             console.log("     Cost: $" +(results[selectInfo[0]].price * selectInfo[1]));
             console.log("-----------------------------------------------------------");
 
               if (selectInfo[1] > results[selectInfo[0]].stock_quantity){
-                console.log ("Sorry, we do not have that much in stock. \n     Quantity available: " + results[selectInfo[0]].stock_quantity + "\nPlease choose another quantity. Thank you! \n");
+                console.log ("Sorry, we do not have that much in stock. \n" +
+                   "Quantity available: " + results[selectInfo[0]].stock_quantity + "\n");
                 selectInfo.pop();
-                quantity();
+                newOrder();
               } else {
 
               inquirer.prompt ([
@@ -96,22 +104,25 @@ var connection = mysql.createConnection({
               ]).then(function(answer){
                 if (answer.confirmRespone === true){
                   sumbitOrder();
+                  console.log("\nYour order has been submitted.\n");
                 } else {
-                  productNumber();
+                  newOrder();
                 }
               });
             };
           });
   };
 
+  //Submits Order to database and modifies inventory
     function sumbitOrder(){
       connection.query("SELECT id, stock_quantity FROM products", function(err, results){
 
           var query = connection.query( "UPDATE products SET ? WHERE ?",
             [{ stock_quantity: (results[selectInfo[0]].stock_quantity - selectInfo[1])
               },
-            { id: selectInfo[0]
+            { id: (selectInfo[0] + 1)
               }],
+
             function(err, res) {
               console.log(res.affectedRows + " products updated!\n");
               setTimeout( function(){
@@ -134,7 +145,7 @@ var connection = mysql.createConnection({
           console.log("\nWelcome to Bamazon! Please check out our selects.\n");
           catalog();
         } else {
-          console.log("\nOrder placed. Thank you");
+          console.log("\nThanks for shopping with us! Goodbye.");
           connection.end();
         }
       })

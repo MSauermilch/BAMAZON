@@ -1,4 +1,6 @@
 
+DROP DATABASE bamazonIndustrial;
+
 CREATE DATABASE bamazonIndustrial;
 
 USE bamazonIndustrial;
